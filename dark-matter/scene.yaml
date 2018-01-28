@@ -1,0 +1,938 @@
+global:
+  sdk_mapzen_api_key: ''
+scene:
+  background:
+    color: 'rgb(12,12,12)'
+lights:
+  light1:
+    type: directional
+    origin: world
+    direction:
+      - 0
+      - 0
+      - -1
+    diffuse:
+      - 0.99
+      - 0.99
+      - 0.99
+      - 1
+sources:
+  openmaptiles:
+    type: MVT
+    url: 'https://free.tilehosting.com/data/v3/{z}/{x}/{y}.pbf.pict'
+    url_params:
+      key: YOUR_KEY
+    max_zoom: 14
+    tile_size: 512
+    transform: |
+      function(data) {
+       Object.keys(data).forEach(function(key) {
+        var features = data[key].features;
+        for (var i = 0; i < features.length; i++) {
+          var feature = features[i];
+          if (feature.geometry.type === "Point")  {
+          var coords = feature.geometry.coordinates;
+          if (coords[0] < 0 || coords[1] < 0 ||
+              coords[0] > 4095 || coords[1] > 4095) {
+              feature.geometry = {}
+              }}}});
+       return data;
+      }
+styles:
+  symbol-overlay:
+    base: points
+    blend: overlay
+    blend_order: 100000
+  text-overlay:
+    base: text
+    blend: overlay
+    blend_order: 100000
+  blend_aeroway-runway-casing:
+    base: lines
+    blend: inlay
+    blend_order: 22
+  blend_highway_path:
+    base: lines
+    blend: inlay
+    blend_order: 28
+    dash:
+      - 1.5
+      - 1.5
+  blend_highway_minor:
+    base: lines
+    blend: inlay
+    blend_order: 30
+  blend_highway_major_casing:
+    base: lines
+    blend: inlay
+    blend_order: 32
+    dash:
+      - 12
+      - 0
+  blend_highway_motorway_casing:
+    base: lines
+    blend: inlay
+    blend_order: 38
+    dash:
+      - 2
+      - 0
+  blend_highway_motorway_inner:
+    base: lines
+    blend: inlay
+    blend_order: 40
+  dash_railway_transit_dashline:
+    base: lines
+    dash:
+      - 3
+      - 3
+  dash_railway_minor_dashline:
+    base: lines
+    dash:
+      - 3
+      - 3
+  dash_railway_dashline:
+    base: lines
+    dash:
+      - 3
+      - 3
+  dash_boundary_state:
+    base: lines
+    dash:
+      - 2
+      - 2
+layers:
+  water:
+    data:
+      source: openmaptiles
+      layer: water
+    filter:
+      $geometry: polygon
+    draw:
+      polygons:
+        order: 2
+        color: 'rgb(27, 27, 29)'
+  landcover_ice_shelf:
+    data:
+      source: openmaptiles
+      layer: landcover
+    filter:
+      all:
+        - $geometry: polygon
+        - subclass: ice_shelf
+        - $zoom: {max: 8}
+    draw:
+      polygons:
+        order: 4
+        color: 'rgb(12, 12, 12)'
+  landcover_glacier:
+    data:
+      source: openmaptiles
+      layer: landcover
+    filter:
+      all:
+        - $geometry: polygon
+        - subclass: glacier
+        - $zoom: {max: 8}
+    draw:
+      polygons:
+        order: 6
+        color:
+          - [0, 'rgb(5, 5, 5)']
+          - [1, 'rgb(5, 5, 5)']
+          - [2, 'rgb(6, 6, 6)']
+          - [3, 'rgb(6, 6, 6)']
+          - [4, 'rgb(7, 7, 7)']
+          - [5, 'rgb(7, 7, 7)']
+          - [6, 'rgb(8, 8, 8)']
+          - [7, 'rgb(8, 8, 8)']
+          - [8, 'rgb(9, 9, 9)']
+  landuse_residential:
+    data:
+      source: openmaptiles
+      layer: landuse
+    filter:
+      all:
+        - $geometry: polygon
+        - class: residential
+        - $zoom: {max: 9}
+    draw:
+      polygons:
+        order: 8
+        color: 'rgb(12, 12, 12)'
+  landcover_wood:
+    data:
+      source: openmaptiles
+      layer: landcover
+    filter:
+      all:
+        - $geometry: polygon
+        - class: wood
+        - $zoom: {min: 10}
+    draw:
+      polygons:
+        order: 10
+        color:
+          - [8, 'rgb(12, 12, 12)']
+          - [9, 'rgb(24, 24, 24)']
+          - [10, 'rgb(28, 28, 28)']
+          - [11, 'rgb(22, 22, 22)']
+          - [12, 'rgb(21, 21, 21)']
+          - [13, 'rgb(20, 20, 20)']
+  landuse_park:
+    data:
+      source: openmaptiles
+      layer: landuse
+    filter:
+      all:
+        - $geometry: polygon
+        - class: park
+    draw:
+      polygons:
+        order: 12
+        color: 'rgb(32, 32, 32)'
+  waterway:
+    data:
+      source: openmaptiles
+      layer: waterway
+    filter:
+      $geometry: line
+    draw:
+      lines:
+        order: 14
+        color: 'rgb(27, 27, 29)'
+        width: 1px
+  water_name:
+    data:
+      source: openmaptiles
+      layer: water_name
+    filter:
+      $geometry: line
+    draw:
+      text-overlay:
+        priority: 68
+        font:
+          size: 12px
+          fill: 'hsla(0, 0%, 0%, 0.7)'
+          stroke: {color: 'hsl(0, 0%, 27%)', width: 1px}
+        text_source: >-
+          function() { return (feature["name:latin"] || "") + "\n" +
+          (feature["name:nonlatin"] || "");}
+        anchor: center
+  building:
+    data:
+      source: openmaptiles
+      layer: building
+    filter:
+      all:
+        - $geometry: polygon
+        - $zoom: {min: 12}
+    draw:
+      polygons:
+        order: 18
+        color: 'rgb(10, 10, 10)'
+      lines:
+        order: 19
+        width: 1.5px
+        color: 'rgb(27, 27, 29)'
+  aeroway-taxiway:
+    data:
+      source: openmaptiles
+      layer: aeroway
+    filter:
+      all:
+        - class: [taxiway]
+        - $zoom: {min: 12}
+    draw:
+      lines:
+        order: 20
+        color: 'rgb(24, 24, 24)'
+        width:
+          - [13, 2.20px]
+          - [14, 2.69px]
+          - [15, 3.45px]
+          - [16, 4.62px]
+          - [17, 6.44px]
+          - [18, 9.26px]
+          - [19, 13.63px]
+        cap: round
+        join: round
+  aeroway-runway-casing:
+    data:
+      source: openmaptiles
+      layer: aeroway
+    filter:
+      all:
+        - class: [runway]
+        - $zoom: {min: 11}
+    draw:
+      blend_aeroway-runway-casing:
+        order: 22
+        color: 'rgba(60, 60, 60, 0.8)'
+        width:
+          - [11, 5.40px]
+          - [12, 7.81px]
+          - [13, 11.42px]
+          - [14, 16.83px]
+          - [15, 24.95px]
+          - [16, 37.13px]
+        cap: round
+        join: round
+  aeroway-area:
+    data:
+      source: openmaptiles
+      layer: aeroway
+    filter:
+      all:
+        - $geometry: polygon
+        - class: [runway, taxiway]
+        - $zoom: {min: 4}
+    draw:
+      polygons:
+        order: 24
+        color: 'rgb(0, 0, 0)'
+  aeroway-runway:
+    data:
+      source: openmaptiles
+      layer: aeroway
+    filter:
+      all:
+        - class: [runway]
+        - $geometry: line
+        - $zoom: {min: 11}
+    draw:
+      lines:
+        order: 26
+        color: 'rgb(0, 0, 0)'
+        width:
+          - [11, 4.40px]
+          - [12, 6.61px]
+          - [13, 9.93px]
+          - [14, 14.91px]
+          - [15, 22.38px]
+          - [16, 33.59px]
+        cap: round
+        join: round
+  highway_path:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: path
+    draw:
+      blend_highway_path:
+        order: 28
+        color: 'rgba(27, 27, 29, 0.9)'
+        width:
+          - [13, 1.40px]
+          - [14, 2.10px]
+          - [15, 2.93px]
+          - [16, 3.94px]
+          - [17, 5.14px]
+          - [18, 6.59px]
+          - [19, 8.32px]
+        cap: round
+        join: round
+  highway_minor:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: [minor, service, track]
+        - $zoom: {min: 8}
+    draw:
+      blend_highway_minor:
+        order: 30
+        color: 'rgba(24, 24, 24, 0.9)'
+        width:
+          - [13, 2.20px]
+          - [14, 2.69px]
+          - [15, 3.45px]
+          - [16, 4.62px]
+          - [17, 6.44px]
+          - [18, 9.26px]
+          - [19, 13.63px]
+        cap: round
+        join: round
+  highway_major_casing:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: [primary, secondary, tertiary, trunk]
+        - $zoom: {min: 11}
+    draw:
+      blend_highway_major_casing:
+        order: 32
+        color: 'rgba(60, 60, 60, 0.8)'
+        width:
+          - [10, 3.40px]
+          - [11, 3.87px]
+          - [12, 4.48px]
+          - [13, 5.27px]
+          - [14, 6.30px]
+          - [15, 7.64px]
+          - [16, 9.39px]
+          - [17, 11.65px]
+          - [18, 14.60px]
+          - [19, 18.42px]
+        cap: butt
+        join: miter
+  highway_major_inner:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: [primary, secondary, tertiary, trunk]
+        - $zoom: {min: 11}
+    draw:
+      lines:
+        order: 34
+        color: 'hsl(0, 0%, 7%)'
+        width:
+          - [10, 2.40px]
+          - [11, 2.82px]
+          - [12, 3.37px]
+          - [13, 4.09px]
+          - [14, 5.01px]
+          - [15, 6.22px]
+          - [16, 7.79px]
+          - [17, 9.83px]
+          - [18, 12.48px]
+          - [19, 15.92px]
+        cap: round
+        join: round
+  highway_major_subtle:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: [primary, secondary, tertiary, trunk]
+        - $zoom: {min: 6}
+        - $zoom: {max: 11}
+    draw:
+      lines:
+        order: 36
+        color: 'rgb(42, 42, 42)'
+        width:
+          - [6, 0.40px]
+          - [7, 1.40px]
+        cap: round
+        join: round
+  highway_motorway_casing:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: motorway
+        - $zoom: {min: 6}
+    draw:
+      blend_highway_motorway_casing:
+        order: 38
+        color: 'rgba(60, 60, 60, 0.8)'
+        width:
+          - [5, 0.40px]
+          - [6, 3.40px]
+          - [7, 3.53px]
+          - [8, 3.72px]
+          - [9, 3.99px]
+          - [10, 4.35px]
+          - [11, 4.87px]
+          - [12, 5.59px]
+          - [13, 6.61px]
+          - [14, 8.02px]
+          - [15, 10.01px]
+          - [16, 12.78px]
+          - [17, 16.67px]
+          - [18, 22.11px]
+          - [19, 29.73px]
+        cap: butt
+        join: miter
+  highway_motorway_inner:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: motorway
+        - $zoom: {min: 6}
+    draw:
+      blend_highway_motorway_inner:
+        order: 40
+        color:
+          - [5.8, 'rgba(217, 217, 217, 0.53)']
+          - [6, 'rgb(0, 0, 0)']
+        width:
+          - [4, 2.40px]
+          - [5, 2.11px]
+          - [6, 1.70px]
+          - [7, 1.80px]
+          - [8, 1.95px]
+          - [9, 2.15px]
+          - [10, 2.44px]
+          - [11, 2.84px]
+          - [12, 3.40px]
+          - [13, 4.19px]
+          - [14, 5.29px]
+          - [15, 6.82px]
+          - [16, 8.98px]
+          - [17, 11.99px]
+          - [18, 16.22px]
+          - [19, 22.13px]
+        cap: round
+        join: round
+  highway_motorway_subtle:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: motorway
+        - $zoom: {max: 6}
+    draw:
+      lines:
+        order: 42
+        color: 'rgb(24, 24, 24)'
+        width:
+          - [4, 2.40px]
+          - [5, 2.11px]
+        cap: round
+        join: round
+  railway_transit:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - all: [{class: transit}, {not: {brunnel: [tunnel]}}]
+        - $zoom: {min: 16}
+    draw:
+      lines:
+        order: 44
+        color: 'rgb(35, 35, 35)'
+        width: 3.40px
+        join: round
+  railway_transit_dashline:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - all: [{class: transit}, {not: {brunnel: [tunnel]}}]
+        - $zoom: {min: 16}
+    draw:
+      dash_railway_transit_dashline:
+        order: 46
+        color: 'rgb(12, 12, 12)'
+        width: 2.40px
+        join: round
+  railway_minor:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - all: [{class: rail}, {service: true}]
+        - $zoom: {min: 16}
+    draw:
+      lines:
+        order: 48
+        color: 'rgb(35, 35, 35)'
+        width: 3.40px
+        join: round
+  railway_minor_dashline:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - all: [{class: rail}, {service: true}]
+        - $zoom: {min: 16}
+    draw:
+      dash_railway_minor_dashline:
+        order: 50
+        color: 'rgb(12, 12, 12)'
+        width: 2.40px
+        join: round
+  railway:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: rail
+        - service: false
+        - $zoom: {min: 13}
+    draw:
+      lines:
+        order: 52
+        color: 'rgb(35, 35, 35)'
+        width:
+          - [16, 3.40px]
+          - [17, 4.05px]
+          - [18, 4.89px]
+          - [19, 5.98px]
+        join: round
+  railway_dashline:
+    data:
+      source: openmaptiles
+      layer: transportation
+    filter:
+      all:
+        - $geometry: line
+        - class: rail
+        - service: false
+        - $zoom: {min: 13}
+    draw:
+      dash_railway_dashline:
+        order: 54
+        color: 'rgb(12, 12, 12)'
+        width:
+          - [16, 2.40px]
+          - [17, 3.05px]
+          - [18, 3.89px]
+          - [19, 4.98px]
+        join: round
+  highway_name_other:
+    data:
+      source: openmaptiles
+      layer: transportation_name
+    filter:
+      all:
+        - not: {class: motorway}
+        - $geometry: line
+    draw:
+      text-overlay:
+        priority: 28
+        font:
+          size: 10px
+          fill: 'rgb(80, 78, 78)'
+          stroke: {color: 'rgb(0, 0, 0)', width: 1.40px}
+          transform: uppercase
+        text_source: >-
+          function() { return (feature["name:latin"] || "") + " " +
+          (feature["name:nonlatin"] || "");}
+        anchor: center
+  highway_name_motorway:
+    data:
+      source: openmaptiles
+      layer: transportation_name
+    filter:
+      all:
+        - $geometry: line
+        - class: motorway
+    draw:
+      text-overlay:
+        priority: 26
+        font:
+          size: 10px
+          fill: 'hsl(0, 0%, 37%)'
+          stroke: {color: 'rgba(255, 255, 255, 0.5)', width: 1px}
+        text_source: ref
+        anchor: center
+  boundary_state:
+    data:
+      source: openmaptiles
+      layer: boundary
+    filter:
+      admin_level: 4
+    draw:
+      dash_boundary_state:
+        order: 60
+        color: 'hsl(0, 0%, 21%)'
+        width:
+          - [3, 1.40px]
+          - [4, 1.43px]
+          - [5, 1.47px]
+          - [6, 1.52px]
+          - [7, 1.58px]
+          - [8, 1.66px]
+          - [9, 1.77px]
+          - [10, 1.91px]
+          - [11, 2.09px]
+          - [12, 2.33px]
+          - [13, 2.63px]
+          - [14, 3.03px]
+          - [15, 3.55px]
+          - [16, 4.22px]
+          - [17, 5.10px]
+          - [18, 6.24px]
+          - [19, 7.72px]
+          - [20, 9.64px]
+          - [21, 12.15px]
+        cap: round
+        join: round
+  boundary_country:
+    data:
+      source: openmaptiles
+      layer: boundary
+    filter:
+      admin_level: 2
+    draw:
+      lines:
+        order: 62
+        color: 'hsl(0, 0%, 23%)'
+        width:
+          - [3, 1.40px]
+          - [4, 1.77px]
+          - [5, 2.18px]
+          - [6, 2.63px]
+          - [7, 3.12px]
+          - [8, 3.67px]
+          - [9, 4.27px]
+          - [10, 4.92px]
+          - [11, 5.65px]
+          - [12, 6.44px]
+          - [13, 7.32px]
+          - [14, 8.28px]
+          - [15, 9.34px]
+          - [16, 10.51px]
+          - [17, 11.79px]
+          - [18, 13.20px]
+          - [19, 14.75px]
+          - [20, 16.46px]
+          - [21, 18.34px]
+        cap: round
+        join: round
+  place_other:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: [hamlet, isolated_dwelling, neighbourhood]
+        - $zoom: {max: 14}
+    draw:
+      text-overlay:
+        priority: 20
+        font:
+          size: 10px
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}
+          transform: uppercase
+        text_source: >-
+          function() { return (feature["name:latin"] || "") + "\n" +
+          (feature["name:nonlatin"] || "");}
+        anchor: center
+  place_suburb:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: suburb
+        - $zoom: {max: 15}
+    draw:
+      text-overlay:
+        priority: 18
+        font:
+          size: 10px
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}
+          transform: uppercase
+        text_source: >-
+          function() { return (feature["name:latin"] || "") + "\n" +
+          (feature["name:nonlatin"] || "");}
+        anchor: center
+  place_village:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: village
+        - $zoom: {max: 14}
+    draw:
+      text-overlay:
+        priority: 16
+        font:
+          size: 10px
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}
+          transform: uppercase
+        text_source: >-
+          function() { return (feature["name:latin"] || "") + "\n" +
+          (feature["name:nonlatin"] || "");}
+        anchor: left
+  place_town:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: town
+        - $zoom: {max: 15}
+    draw:
+      symbol-overlay:
+        priority: 14
+        texture: sprite
+        sprite: |-
+          function() {
+            if ($zoom >= 0 && $zoom < 9) return "circle-11";
+            return "__default__";
+          }
+        text:
+          font: {size: 10px, fill: 'rgb(101, 101, 101)', stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}, transform: uppercase}
+          text_source: 'function() { return (feature["name:latin"] || "") + "\n" + (feature["name:nonlatin"] || "");}'
+          anchor: [[0, left], [8, center]]
+  place_city:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: city
+        - rank: {min: 3}
+          not: {rank: 3}
+        - $zoom: {max: 14}
+    draw:
+      symbol-overlay:
+        priority: 12
+        texture: sprite
+        sprite: |-
+          function() {
+            if ($zoom >= 0 && $zoom < 9) return "circle-11";
+            return "__default__";
+          }
+        text:
+          font: {size: 10px, fill: 'rgb(101, 101, 101)', stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}, transform: uppercase}
+          text_source: 'function() { return (feature["name:latin"] || "") + "\n" + (feature["name:nonlatin"] || "");}'
+          anchor: [[0, left], [8, center]]
+  place_city_large:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - rank: {max: 3}
+        - class: city
+        - $zoom: {max: 12}
+    draw:
+      symbol-overlay:
+        priority: 10
+        texture: sprite
+        sprite: |-
+          function() {
+            if ($zoom >= 0 && $zoom < 9) return "circle-11";
+            return "__default__";
+          }
+        text:
+          font: {size: 14px, fill: 'rgb(101, 101, 101)', stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}, transform: uppercase}
+          text_source: 'function() { return (feature["name:latin"] || "") + "\n" + (feature["name:nonlatin"] || "");}'
+          anchor: [[0, left], [8, center]]
+  place_state:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: state
+        - $zoom: {max: 12}
+    draw:
+      text-overlay:
+        priority: 8
+        font:
+          size: 10px
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.40px}
+          transform: uppercase
+        text_source: >-
+          function() { return (feature["name:latin"] || "") + "\n" +
+          (feature["name:nonlatin"] || "");}
+        anchor: center
+  place_country_other:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: country
+        - iso_a2: false
+        - $zoom: {max: 8}
+    draw:
+      text-overlay:
+        priority: 6
+        font:
+          size: [[0, 9px], [1, 11px]]
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.80px}
+          transform: uppercase
+        text_source: 'name:latin'
+        anchor: center
+  place_country_minor:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - class: country
+        - rank: {min: 2}
+        - iso_a2: true
+        - $zoom: {max: 8}
+    draw:
+      text-overlay:
+        priority: 4
+        font:
+          size: [[0, 10px], [6, 12px]]
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.80px}
+          transform: uppercase
+        text_source: 'name:latin'
+        anchor: center
+  place_country_major:
+    data:
+      source: openmaptiles
+      layer: place
+    filter:
+      all:
+        - $geometry: point
+        - rank: {max: 1}
+        - class: country
+        - iso_a2: true
+        - $zoom: {max: 6}
+    draw:
+      text-overlay:
+        priority: 2
+        font:
+          size: [[0, 10px], [3, 12px], [4, 14px]]
+          fill: 'rgb(101, 101, 101)'
+          stroke: {color: 'rgba(0, 0, 0, 0.7)', width: 1.80px}
+          transform: uppercase
+        text_source: 'name:latin'
+        anchor: center
+textures:
+  sprite:
+    url: sprite.png
+    filtering: mipmap
+    sprites:
+      circle-11: [64, 0, 17, 17]
+      star-11: [81, 0, 17, 17]
+      wood-pattern: [0, 0, 64, 64]
+      __default__: [0, 0, 0, 0]

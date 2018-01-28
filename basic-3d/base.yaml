@@ -1,0 +1,44 @@
+global:
+    sdk_mapzen_api_key: ''
+
+scene:
+    background:
+        color: '#f00'
+lights:
+    light1:
+        type: directional
+        origin: world
+        direction: [0, 0, -1]
+        diffuse: [0.7, 0.7, 0.7, 1.]
+        ambient: [0.3, 0.3, 0.3, 1.]
+sources:
+    openmaptiles:
+        type: MVT
+        url: https://free.tilehosting.com/data/v3/{z}/{x}/{y}.pbf.pict
+        url_params:
+            key: YOUR_KEY
+        max_zoom: 14
+        tile_size: 512
+        transform: |
+            function(data) {
+             Object.keys(data).forEach(function(key) {
+              var features = data[key].features;
+              for (var i = 0; i < features.length; i++) {
+                var feature = features[i];
+                if (feature.geometry.type === 'Point')  {
+                var coords = feature.geometry.coordinates;
+                if (coords[0] < 0 || coords[1] < 0 ||
+                    coords[0] > 4095 || coords[1] > 4095) {
+                    feature.geometry = {}
+                }}}});
+             return data;
+            }
+styles:
+    symbol-overlay:
+        base: points
+        blend: overlay
+        blend_order: 100000
+    text-overlay:
+        base: text
+        blend: overlay
+        blend_order: 100000
